@@ -1,9 +1,9 @@
 /* eslint-disable no-underscore-dangle */
 /* eslint-disable import/no-extraneous-dependencies */
 
-let modelist = requireLazy(() => ace.require('ace/ext/modelist'));
-let themelist = requireLazy(() => ace.require('ace/ext/themelist'));
-let beautify = requireLazy(() => ace.require('ace/ext/beautify'));
+const modelist = requireLazy(() => ace.require("ace/ext/modelist"));
+const themelist = requireLazy(() => ace.require("ace/ext/themelist"));
+const beautify = requireLazy(() => ace.require("ace/ext/beautify"));
 
 let appInfo = null;
 let editor = null;
@@ -24,7 +24,7 @@ let userPrefPath;
 let langPrefPath;
 let keybindings;
 
-let commandHistory = [];
+const commandHistory = [];
 let historyIndex;
 
 // UI Components
@@ -43,7 +43,9 @@ let previewDevDivUi;
 let editorConsoleDivUi;
 let processIndicatorUi;
 
-let errorSVG = requireLazy(async () => await fetch('res/img/err.svg').then(res => res.text()));
+const errorSVG = requireLazy(
+  async () => await fetch("res/img/err.svg").then((res) => res.text())
+);
 
 // Constants
 const INFO_LEVEL = Object.freeze({
@@ -54,56 +56,78 @@ const INFO_LEVEL = Object.freeze({
   error: 4,
 });
 
-
 const commandList = {
-  '!ver': {
-    desc: 'Shows the current version of the application',
-    func: () => { print(`${appInfo.name} ${appInfo.version}`); },
+  "!ver": {
+    desc: "Shows the current version of the application",
+    func: () => {
+      print(`${appInfo.name} ${appInfo.version}`);
+    },
   },
-  '!cls': {
-    desc: 'Clear console',
-    func: () => { consoleOutUi.innerHTML = ''; },
+  "!cls": {
+    desc: "Clear console",
+    func: () => {
+      consoleOutUi.innerHTML = "";
+    },
   },
-  '!kill': {
-    desc: 'Kills the currently running process',
+  "!kill": {
+    desc: "Kills the currently running process",
     func: () => {
       if (runningProcess) {
         killProcess().then(() => print("Process Killed", INFO_LEVEL.info));
       } else {
-        print('No nunning process to kill.', INFO_LEVEL.warn);
+        print("No nunning process to kill.", INFO_LEVEL.warn);
       }
     },
   },
-  '!hello': {
-    desc: 'Hello There :D',
-    func: () => { print('Hi there :D'); },
-  },
-  '!dev': {
-    desc: 'Open Chrome Devtools for the preview window',
-    func: () => { toggleDevTool(); },
-  },
-  '!settings': {
-    desc: 'Open settings file',
-    func: () => { openSettings(); },
-  },
-  '!lang_settings': {
-    desc: 'Open language settings file',
-    func: () => { openLanguageSettings(); },
-  },
-  '!exp_pdf': {
-    desc: 'Generate and export PDF of the current preview panel',
-    func: () => { exportPDFFromPreview(); }
-  },
-  '!help': {
-    desc: 'Shows all the available commands',
+  "!hello": {
+    desc: "Hello There :D",
     func: () => {
-      let ret = '';
-      let longest = Object.keys(commandList).reduce((prev, curr) => curr.length > prev ? curr.length : prev, 0) + 6;
+      print("Hi there :D");
+    },
+  },
+  "!dev": {
+    desc: "Open Chrome Devtools for the preview window",
+    func: () => {
+      toggleDevTool();
+    },
+  },
+  "!settings": {
+    desc: "Open settings file",
+    func: () => {
+      openSettings();
+    },
+  },
+  "!lang": {
+    desc: "Set language from args",
+    func: () => {},
+  },
+  "!lang_settings": {
+    desc: "Open language settings file",
+    func: () => {
+      openLanguageSettings();
+    },
+  },
+  "!exp_pdf": {
+    desc: "Generate and export PDF of the current preview panel",
+    func: () => {
+      exportPDFFromPreview();
+    },
+  },
+  "!help": {
+    desc: "Shows all the available commands",
+    func: () => {
+      let ret = "";
+      const longest =
+        Object.keys(commandList).reduce(
+          (prev, curr) => (curr.length > prev ? curr.length : prev),
+          0
+        ) + 6;
       Object.entries(commandList).forEach(([key, value]) => {
-        ret += `${key}${" ".repeat(longest - key.length)}${value.description}\n`;
+        ret += `${key}${" ".repeat(longest - key.length)}${value.desc}\n`;
       });
 
-      ret += "------------------------------------------------------------------------\n";
+      ret +=
+        "------------------------------------------------------------------------\n";
       Object.entries(keybindings.ctrl).forEach(([key, value]) => {
         ret += `ctrl + ${key}            ${value.description}\n`;
       });
@@ -116,12 +140,7 @@ const commandList = {
   },
 };
 
-
-
-
-
 /* ------------- PUBLIC API ------------- */
-
 
 function getContent() {
   return editor.getValue();
@@ -138,10 +157,9 @@ function getModeFromName(filename) {
   });
 }
 
-
 function setLanguage(langKey) {
-  if (langKey !== 'markdown') {
-    editor.off('input', markdownUpdater);
+  if (langKey !== "markdown") {
+    editor.off("input", markdownUpdater);
   }
 
   const lang = langInfo[langKey];
@@ -150,14 +168,17 @@ function setLanguage(langKey) {
 
   languageDisplaySelectedUi.innerText = lang.name;
   languageDisplaySelectedUi.dataset.value = langKey;
-  [...optionsContainer.querySelectorAll(`.option`)].forEach(el => el.classList.remove("active"));
-  optionsContainer.querySelector(`.option[data-value="${langKey}"]`).classList.add("active");
+  [...optionsContainer.querySelectorAll(".option")].forEach((el) =>
+    el.classList.remove("active")
+  );
+  optionsContainer
+    .querySelector(`.option[data-value="${langKey}"]`)
+    .classList.add("active");
 }
 
 function setContent(content) {
   editor.setValue(content, -1);
 }
-
 
 function newWindow(filePaths = []) {
   filePaths = Array.isArray(filePaths) ? filePaths : [filePaths];
@@ -170,27 +191,29 @@ async function openFile(filePaths = []) {
   filePaths = Array.isArray(filePaths) ? filePaths : [filePaths];
 
   if (!filePaths.length) {
-    const { canceled, filePaths: _filePaths } = await window.api.showOpenDialog()
+    const { canceled, filePaths: _filePaths } =
+      await window.api.showOpenDialog();
     if (canceled) {
       notifyLoadEnd();
       return;
-    } else {
-      filePaths = _filePaths;
     }
+    filePaths = _filePaths;
   }
 
   if (!file.path && (isSaved === null || isSaved)) {
-    let fileToOpen = filePaths.shift();
-    window.api.readFile(fileToOpen)
-      .then(data => {
+    const fileToOpen = filePaths.shift();
+    window.api
+      .readFile(fileToOpen)
+      .then((data) => {
         editor.setValue(data, -1);
         _setFileInfo(fileToOpen);
-        //webviewUi.src = 'about:blank'
+        // webviewUi.src = 'about:blank'
         print(`Opened file ${fileToOpen}`);
       })
-      .catch(err => {
+      .catch((err) => {
         print(`Could not open file ${fileToOpen}<br>${err}`, INFO_LEVEL.error);
-      }).finally(() => {
+      })
+      .finally(() => {
         notifyLoadEnd();
       });
   }
@@ -216,18 +239,19 @@ async function saveFile(saveAs = false) {
       defaultPath: `~/${lang.tempname}`,
       filters: [
         { name: lang.name, extensions: lang.ext },
-        { name: 'All Files', extensions: ['*'] },
+        { name: "All Files", extensions: ["*"] },
       ],
     };
 
-    let { canceled, filePath: _filepath } = await window.api.showSaveDialog(options);
+    const { canceled, filePath: _filepath } = await window.api.showSaveDialog(
+      options
+    );
 
     if (canceled) {
       notifyLoadEnd();
       return;
-    } else {
-      filePath = _filepath;
     }
+    filePath = _filepath;
   }
 
   await window.api.writeFile(filePath, getContent());
@@ -240,42 +264,41 @@ async function saveFile(saveAs = false) {
   notifyLoadEnd();
 }
 
-
-
 /* ------------- UI ------------- */
 
 function setTheme(name) {
   editor.setTheme(name);
   themeChoiceUi.value = name;
-  window.api.storeSetting('theme', name)
+  window.api.storeSetting("theme", name);
 }
 
 function setFontSize(size) {
   editor.setFontSize(size);
-  window.api.storeSetting('font_size', size)
+  window.api.storeSetting("font_size", size);
 }
 
-
 function notify(type) {
-  document.getElementById('status-display').className = '';
+  document.getElementById("status-display").className = "";
   // document.getElementById('status-display').offsetWidth;
-  document.getElementById('status-display').classList.add(type);
+  document.getElementById("status-display").classList.add(type);
 }
 
 function notifyLoadStart() {
-  document.getElementById('status-bar').classList.add('load');
+  document.getElementById("status-bar").classList.add("load");
 }
 
 function notifyLoadEnd() {
-  document.getElementById('status-bar').className = '';
+  document.getElementById("status-bar").className = "";
 }
 
 function print(text, mode = INFO_LEVEL.info) {
-  const block = document.createElement('div');
-  block.classList.add(Object.keys(INFO_LEVEL).find((key) => INFO_LEVEL[key] === mode));
+  const block = document.createElement("div");
+  block.classList.add(
+    Object.keys(INFO_LEVEL).find((key) => INFO_LEVEL[key] === mode)
+  );
 
   errorSVG.get().then((svg) => {
-    block.innerHTML = (mode === 4 ? svg : '') + text;
+    block.innerHTML = (mode === 4 ? svg : "") + text;
   });
   consoleOutUi.appendChild(block);
 
@@ -284,10 +307,12 @@ function print(text, mode = INFO_LEVEL.info) {
     notify(ret);
   }
 
-  setTimeout(() => consoleUi.scrollTo({ top: consoleUi.scrollHeight, behavior: 'smooth' }), 0);
+  setTimeout(
+    () =>
+      consoleUi.scrollTo({ top: consoleUi.scrollHeight, behavior: "smooth" }),
+    0
+  );
 }
-
-
 
 /* ------------- FEATURES ------------- */
 
@@ -296,24 +321,36 @@ function beautifyDocument() {
 }
 
 function makeLanguageTemplate() {
-  if ((languageDisplaySelectedUi.dataset.value in langInfo) && langInfo[languageDisplaySelectedUi.dataset.value].templ) {
-    editor.setValue(langInfo[languageDisplaySelectedUi.dataset.value].templ, -1);
+  if (
+    languageDisplaySelectedUi.dataset.value in langInfo &&
+    langInfo[languageDisplaySelectedUi.dataset.value].templ
+  ) {
+    editor.setValue(
+      langInfo[languageDisplaySelectedUi.dataset.value].templ,
+      -1
+    );
   } else {
-    print(`No default template exists for ${languageDisplaySelectedUi.dataset.value}`, INFO_LEVEL.warn);
+    print(
+      `No default template exists for ${languageDisplaySelectedUi.dataset.value}`,
+      INFO_LEVEL.warn
+    );
   }
 }
 
 function evaluateMathInline() {
   const range = editor.selection.getRange();
   let func = editor.getSelectedText();
-  if (range.start.row === range.end.row && range.start.column === range.end.column) {
+  if (
+    range.start.row === range.end.row &&
+    range.start.column === range.end.column
+  ) {
     func = editor.session.getLine(range.start.row);
   }
 
   try {
     const result = _calculate(func);
     editor.session.insert(editor.selection.getRange().end, ` = ${result}`);
-    notify('confirm');
+    notify("confirm");
   } catch (error) {
     print(`Unable to calculate '${func}'`, INFO_LEVEL.error);
   }
@@ -329,10 +366,10 @@ async function exportPDFFromPreview() {
     return;
   }
 
-  const pdfPath = window.api.path.resolve(file.path, file.name + '.pdf');
+  const pdfPath = window.api.path.resolve(file.path, `${file.name}.pdf`);
 
-  let data = await webviewUi.printToPDF({ landscape: false, pageSize: 'A4' });
-  let error = await window.api.writeFile(pdfPath, data);
+  const data = await webviewUi.printToPDF({ landscape: false, pageSize: "A4" });
+  const error = await window.api.writeFile(pdfPath, data);
 
   if (error) {
     print(`Failed to write PDF to ${pdfPath}:\n${error}`, INFO_LEVEL.error);
@@ -350,11 +387,11 @@ function openLanguageSettings() {
 }
 
 async function killProcess() {
-  //return new Promise((resolve, reject) => {
+  // return new Promise((resolve, reject) => {
   if (runningProcess != null) {
     await runningProcess.dispatch("kill");
   }
-  /*  
+  /*
     , (err) => {
       if (err) {
         print('Could not stop the running process.', INFO_LEVEL.error);
@@ -370,16 +407,13 @@ async function killProcess() {
 */
 }
 
-
-
-
 /* ------------- PRIVATE HELPERS ------------- */
 
 function _debounce(func, wait, immediate) {
   let timeout;
   return () => {
-    const context = this; const
-      args = arguments;
+    const context = this;
+    const args = arguments;
     const later = () => {
       timeout = null;
       if (!immediate) func.apply(context, args);
@@ -391,21 +425,11 @@ function _debounce(func, wait, immediate) {
   };
 }
 
-
-
 const markdownUpdater = _debounce(() => {
   const markedHtml = mdToHTML();
-  webviewUi.send('fill_content', markedHtml);
-  //webviewUi.contentWindow.document.body.innerHTML = markedHtml;
-
+  webviewUi.send("fill_content", markedHtml);
+  // webviewUi.contentWindow.document.body.innerHTML = markedHtml;
 }, 200);
-
-
-
-
-
-
-
 
 function toggleDevTool() {
   const targetId = webviewUi.getWebContentsId();
@@ -414,19 +438,26 @@ function toggleDevTool() {
   togglePreviewDivider();
 }
 
-
-
 function mdToHTML() {
-  const basepath = file.path.replaceAll('\\', '/');
+  const basepath = file.path.replaceAll("\\", "/");
   let pre = getContent();
-  pre = pre.replaceAll(/src="\.\/(.*?)"/ig, `src="${basepath}$1"`);
+  pre = pre.replaceAll(/src="\.\/(.*?)"/gi, `src="${basepath}$1"`);
   let markedHtml = window.api.markedParse(pre, { baseUrl: basepath });
 
-  let parser = new DOMParser();
-  let htmlDoc = parser.parseFromString(markedHtml, 'text/html');
-  let sections = [...htmlDoc.querySelectorAll('h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]')];
+  const parser = new DOMParser();
+  const htmlDoc = parser.parseFromString(markedHtml, "text/html");
+  const sections = [
+    ...htmlDoc.querySelectorAll(
+      "h1[id], h2[id], h3[id], h4[id], h5[id], h6[id]"
+    ),
+  ];
 
-  let toc = sections.map(el => `<li><a href="#${el.id}">${el.nodeName} - ${el.innerText}</a></li>`).join("");
+  let toc = sections
+    .map(
+      (el) =>
+        `<li><a href="#${el.id}">${el.nodeName} - ${el.innerText}</a></li>`
+    )
+    .join("");
   toc = `<ul>${toc}</ul>`;
 
   markedHtml = markedHtml.replace(/\[TOC\]/, toc);
@@ -434,45 +465,42 @@ function mdToHTML() {
   return markedHtml;
 }
 
-
-
 function commandRunner(command, args, callback) {
   notifyLoadStart();
   print(`> ${command}`, INFO_LEVEL.user);
 
-
   runningProcess = window.api.spawnProcess(command, args, file.path);
 
-  runningProcess.registerHandler('error', (err) => {
+  runningProcess.registerHandler("error", (err) => {
     print(err, INFO_LEVEL.err);
   });
 
-  runningProcess.registerHandler('stdout', (data) => {
+  runningProcess.registerHandler("stdout", (data) => {
     print(data.toString());
   });
 
-  runningProcess.registerHandler('stderr', (data) => {
+  runningProcess.registerHandler("stderr", (data) => {
     if (file.lang !== undefined && langInfo[file.lang].linere != null) {
-      const line = langInfo[file.lang].linere.replaceAll('<name>', file.name);
-      const re = new RegExp(line, 'gi');
+      const line = langInfo[file.lang].linere.replaceAll("<name>", file.name);
+      const re = new RegExp(line, "gi");
       data = data.replaceAll(re, '<a class="jump-to-line" href="#$2">$1</a>');
     }
     print(data, INFO_LEVEL.error);
   });
-  processIndicatorUi.classList.add('active');
+  processIndicatorUi.classList.add("active");
 
-  runningProcess.registerHandler('close', (code) => {
+  runningProcess.registerHandler("close", (code) => {
     // Here you can get the exit code of the script
     switch (code) {
       case 0:
-        notify('confirm');
+        notify("confirm");
         break;
       default:
-        notify('error');
+        notify("error");
         break;
     }
 
-    processIndicatorUi.classList.remove('active');
+    processIndicatorUi.classList.remove("active");
     notifyLoadEnd();
     runningProcess = null;
 
@@ -483,43 +511,50 @@ function commandRunner(command, args, callback) {
 }
 
 function runCommand(command, args, callback = undefined) {
-  killProcess().then(() => { commandRunner(command, args, callback); });
+  killProcess().then(() => {
+    commandRunner(command, args, callback);
+  });
 }
 
 async function runFile() {
   if (file.lang in langInfo) {
     let cmdRun = langInfo[file.lang].run;
     if (cmdRun) {
-      cmdRun = cmdRun.replaceAll('<name>', file.name);
-      cmdRun = cmdRun.replaceAll('<path>', file.path);
-      cmdRun = cmdRun.replaceAll('<exe_extension>', getExeExtension(appInfo.os));
+      cmdRun = cmdRun.replaceAll("<name>", file.name);
+      cmdRun = cmdRun.replaceAll("<path>", file.path);
+      cmdRun = cmdRun.replaceAll(
+        "<exe_extension>",
+        getExeExtension(appInfo.os)
+      );
 
       runCommand(cmdRun);
-    } else if (file.lang === 'latex') {
+    } else if (file.lang === "latex") {
       webviewUi.className = "";
 
       webviewUi.src = `${file.path + file.name}.pdf?v=${Date.now()}`;
-    } else if (file.lang === 'markdown') {
+    } else if (file.lang === "markdown") {
       webviewUi.className = "";
 
       const markedHtml = mdToHTML();
 
-      webviewUi.addEventListener('did-finish-load', () => {
-        webviewUi.send('fill_content', markedHtml);
-        editor.on('input', markdownUpdater);
-      }, { once: true });
+      webviewUi.addEventListener(
+        "did-finish-load",
+        () => {
+          webviewUi.send("fill_content", markedHtml);
+          editor.on("input", markdownUpdater);
+        },
+        { once: true }
+      );
 
       webviewUi.src = "./res/embed/markdown/index.html";
-
-
-    } else if (file.lang === 'html') {
+    } else if (file.lang === "html") {
       webviewUi.className = "";
       webviewUi.classList.add("html-style");
 
-      webviewUi.src = (`${file.path + file.name}.html`);
+      webviewUi.src = `${file.path + file.name}.html`;
     } else {
       webviewUi.className = "";
-      webviewUi.src = 'about:blank';
+      webviewUi.src = "about:blank";
     }
   }
 }
@@ -533,13 +568,15 @@ async function buildRunFile() {
     }
   }
 
-
   if (file.lang in langInfo) {
     let cmdComp = langInfo[file.lang].comp;
     if (cmdComp) {
-      cmdComp = cmdComp.replaceAll('<name>', file.name);
-      cmdComp = cmdComp.replaceAll('<path>', file.path);
-      cmdComp = cmdComp.replaceAll('<exe_extension>', getExeExtension(appInfo.os));
+      cmdComp = cmdComp.replaceAll("<name>", file.name);
+      cmdComp = cmdComp.replaceAll("<path>", file.path);
+      cmdComp = cmdComp.replaceAll(
+        "<exe_extension>",
+        getExeExtension(appInfo.os)
+      );
 
       runCommand(cmdComp, [], (code) => {
         if (code === 0) {
@@ -561,32 +598,36 @@ async function buildRunFile() {
   }
 }
 
-
 function togglePreviewDivider(open = undefined) {
-  const num = parseFloat(previewDevDivUi.previousElementSibling.style.height.replace('%', ''));
+  const num = parseFloat(
+    previewDevDivUi.previousElementSibling.style.height.replace("%", "")
+  );
 
   let targetPercent = "100%";
   if (open === undefined) {
-    targetPercent = Math.abs(num - 60) < 1 ? '99%' : '60%';
+    targetPercent = Math.abs(num - 60) < 1 ? "99%" : "60%";
   } else {
-    targetPercent = open ? '99%' : '60%';
+    targetPercent = open ? "99%" : "60%";
   }
 
-  const anim = previewDevDivUi.previousElementSibling.animate([
-    { height: previewDevDivUi.previousElementSibling.style.height },
-    { height: targetPercent },
-  ], {
-    duration: 450,
-    easing: 'cubic-bezier(0.860, 0.000, 0.070, 1.000)',
-  });
+  const anim = previewDevDivUi.previousElementSibling.animate(
+    [
+      { height: previewDevDivUi.previousElementSibling.style.height },
+      { height: targetPercent },
+    ],
+    {
+      duration: 450,
+      easing: "cubic-bezier(0.860, 0.000, 0.070, 1.000)",
+    }
+  );
   anim.finished.then(() => {
     previewDevDivUi.previousElementSibling.style.height = targetPercent;
-    //window.api.storeSetting('console_div_percent', targetPercent)
+    // window.api.storeSetting('console_div_percent', targetPercent)
   });
 }
 
 function _updateTitle() {
-  let title = file.extension ? file.name + file.extension : 'new document';
+  let title = file.extension ? file.name + file.extension : "new document";
 
   if (!(isSaved === null || isSaved)) {
     title = `${title}*`;
@@ -605,7 +646,7 @@ function _setFileInfo(filePath) {
 
   const lang = getModeFromName(file.name + file.extension);
   if (lang == null) {
-    file.lang = 'plaintext';
+    file.lang = "plaintext";
   } else {
     file.lang = lang[0];
   }
@@ -617,9 +658,9 @@ function _setFileInfo(filePath) {
 
 function _toggleFullscreenStyle(isFullscreen) {
   if (isFullscreen) {
-    document.body.classList.add('fullscreen');
+    document.body.classList.add("fullscreen");
   } else {
-    document.body.classList.remove('fullscreen');
+    document.body.classList.remove("fullscreen");
   }
 }
 
@@ -629,27 +670,29 @@ function _calculate(string) {
 }
 
 function _assignUIVariables() {
-  documentNameUi = document.getElementById('document-name');
-  languageDisplayUi = document.getElementById('language-display');
-  languageDisplaySelectedUi = document.querySelector("#language-display .selected");
+  documentNameUi = document.getElementById("document-name");
+  languageDisplayUi = document.getElementById("language-display");
+  languageDisplaySelectedUi = document.querySelector(
+    "#language-display .selected"
+  );
   optionsContainer = document.getElementsByClassName("options-container")[0];
-  themeChoiceUi = document.getElementById('theme-choice');
-  charDisplayUi = document.getElementById('fchar-display');
-  consoleUi = document.getElementById('console');
-  consoleInUi = document.getElementById('console-in');
-  consoleOutUi = document.getElementById('console-out');
-  webviewUi = document.getElementById('embed-content');
-  webviewDevUi = document.getElementById('embed-content-dev-view');
-  themeLink = document.getElementById('theme-link');
-  editorMediaDivUi = document.getElementById('editor-media-div');
-  editorConsoleDivUi = document.getElementById('editor-console-div');
-  previewDevDivUi = document.getElementById('preview-dev-div');
-  processIndicatorUi = document.getElementById('process-indicator');
+  themeChoiceUi = document.getElementById("theme-choice");
+  charDisplayUi = document.getElementById("fchar-display");
+  consoleUi = document.getElementById("console");
+  consoleInUi = document.getElementById("console-in");
+  consoleOutUi = document.getElementById("console-out");
+  webviewUi = document.getElementById("embed-content");
+  webviewDevUi = document.getElementById("embed-content-dev-view");
+  themeLink = document.getElementById("theme-link");
+  editorMediaDivUi = document.getElementById("editor-media-div");
+  editorConsoleDivUi = document.getElementById("editor-console-div");
+  previewDevDivUi = document.getElementById("preview-dev-div");
+  processIndicatorUi = document.getElementById("process-indicator");
 }
 
 function _initializeOptions(config) {
   themelist.get().themes.forEach((theme) => {
-    const option = document.createElement('option');
+    const option = document.createElement("option");
     option.text = theme.caption;
     option.value = theme.theme;
     themeChoiceUi.add(option);
@@ -670,8 +713,7 @@ async function _initialize() {
   userPrefPath = settings.userPrefPath;
   langPrefPath = settings.languageConfigPath;
 
-
-  editor = ace.edit('main-text-area', {
+  editor = ace.edit("main-text-area", {
     enableBasicAutocompletion: true,
     showPrintMargin: false,
     showLineNumbers: editorConfig.line_numbers,
@@ -686,7 +728,7 @@ async function _initialize() {
     fontSize: editorConfig.font_size,
   });
 
-  document.addEventListener('drop', (event) => {
+  document.addEventListener("drop", (event) => {
     event.preventDefault();
     event.stopPropagation();
 
@@ -696,87 +738,93 @@ async function _initialize() {
   });
 
   if (!windowConfig.native_frame) {
-    document.body.classList.add('rounded');
+    document.body.classList.add("rounded");
   }
   if (localWindowConfig.maximized) {
-    document.body.classList.add('fullscreen');
+    document.body.classList.add("fullscreen");
   }
 
   const ro = new ResizeObserver(() => {
     editor.resize();
   });
-  ro.observe(document.getElementById('editor-wrapper'));
+  ro.observe(document.getElementById("editor-wrapper"));
 
-  document.addEventListener('dragover', (e) => {
+  document.addEventListener("dragover", (e) => {
     e.preventDefault();
     e.stopPropagation();
   });
 
-  document.addEventListener('mousewheel', (e) => {
-    if (e.ctrlKey) {
-      e.preventDefault();
-      let size = editor.getFontSize() + Math.sign(e.deltaY);
-      size = Math.min(Math.max(size, 3), 80);
-      setFontSize(size);
-    }
-  }, { passive: false });
+  document.addEventListener(
+    "mousewheel",
+    (e) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        let size = editor.getFontSize() + Math.sign(e.deltaY);
+        size = Math.min(Math.max(size, 3), 80);
+        setFontSize(size);
+      }
+    },
+    { passive: false }
+  );
 
-  editor.on('change', () => {
+  editor.on("change", () => {
     if (isSaved === null || isSaved) {
       isSaved = false;
       _updateTitle();
     }
   });
 
-  document.getElementById('min-button').addEventListener('click', () => {
+  document.getElementById("min-button").addEventListener("click", () => {
     window.api.minimize();
   });
 
-  document.getElementById('max-button').addEventListener('click', () => {
+  document.getElementById("max-button").addEventListener("click", () => {
     window.api.toggleMaxUnmax();
   });
 
-  document.getElementById('close-button').addEventListener('click', () => {
+  document.getElementById("close-button").addEventListener("click", () => {
     killProcess().then(() => window.api.close());
   });
 
-  document.getElementById('pin-button').addEventListener('click', (e) => {
-    window.api.togglePin().then(pinned => {
+  document.getElementById("pin-button").addEventListener("click", (e) => {
+    window.api.togglePin().then((pinned) => {
       if (!pinned) {
-        e.target.classList.add('pinned');
+        e.target.classList.add("pinned");
       } else {
-        e.target.classList.remove('pinned');
+        e.target.classList.remove("pinned");
       }
     });
   });
-
 
   window.api.updateMaxUnmax((_, value) => {
     _toggleFullscreenStyle(value);
   });
 
   window.api.canClose((event) => {
-    event.sender.send('can-close-response', (isSaved === null || isSaved));
+    event.sender.send("can-close-response", isSaved === null || isSaved);
   });
 
   window.api.print((_, value) => {
     print(value.text);
   });
 
+  window.api.save(() => {
+    saveFile();
+  });
 
-  const emittedOnce = (element, eventName) => new Promise(resolve => {
-    element.addEventListener(eventName, event => resolve(event), { once: true })
-  })
-  const browserReady = emittedOnce(webviewUi, 'dom-ready');
-  const devtoolsReady = emittedOnce(webviewDevUi, 'dom-ready');
-  Promise.all([browserReady, devtoolsReady]).then(() => {
-
-  })
-
+  const emittedOnce = (element, eventName) =>
+    new Promise((resolve) => {
+      element.addEventListener(eventName, (event) => resolve(event), {
+        once: true,
+      });
+    });
+  const browserReady = emittedOnce(webviewUi, "dom-ready");
+  const devtoolsReady = emittedOnce(webviewDevUi, "dom-ready");
+  Promise.all([browserReady, devtoolsReady]).then(() => {});
 
   // Load Keybindings
   try {
-    const response = await fetch('res/keybindings.json');
+    const response = await fetch("res/keybindings.json");
     const data = await response.text();
     keybindings = JSON.parse(data);
   } catch (err) {
@@ -784,25 +832,28 @@ async function _initialize() {
     return;
   }
 
-
-  window.addEventListener('keydown', (event) => {
-    let lowerKey = event.key.toLowerCase();
-    if (event.ctrlKey && !event.shiftKey) {
-      if (lowerKey in keybindings.ctrl) {
-        event.preventDefault();
-        window[keybindings.ctrl[lowerKey].func]();
+  window.addEventListener(
+    "keydown",
+    (event) => {
+      const lowerKey = event.key.toLowerCase();
+      if (event.ctrlKey && !event.shiftKey) {
+        if (lowerKey in keybindings.ctrl) {
+          event.preventDefault();
+          window[keybindings.ctrl[lowerKey].func]();
+        }
+      } else if (event.ctrlKey && event.shiftKey) {
+        if (lowerKey in keybindings.ctrlshift) {
+          event.preventDefault();
+          window[keybindings.ctrlshift[lowerKey].func]();
+        }
       }
-    } else if (event.ctrlKey && event.shiftKey) {
-      if (lowerKey in keybindings.ctrlshift) {
-        event.preventDefault();
-        window[keybindings.ctrlshift[lowerKey].func]();
-      }
-    }
-  }, false);
+    },
+    false
+  );
 
-  document.addEventListener('click', (e) => {
-    if (e.target && e.target.classList.contains('jump-to-line')) {
-      const line = parseInt(e.target.getAttribute('href').replace('#', ''), 10);
+  document.addEventListener("click", (e) => {
+    if (e.target && e.target.classList.contains("jump-to-line")) {
+      const line = parseInt(e.target.getAttribute("href").replace("#", ""), 10);
       editor.selection.clearSelection();
       editor.selection.moveCursorToPosition({ row: line - 1, column: 0 });
       editor.selection.selectLineEnd();
@@ -810,80 +861,119 @@ async function _initialize() {
     }
   });
 
-  consoleInUi.addEventListener('keydown', (event) => {
-    if (!event.shiftKey && event.key === 'Enter') {
-      event.preventDefault();
-      const cmd = consoleInUi.value.replace(/\n$/, '');
-      consoleInUi.value = '';
+  consoleInUi.addEventListener(
+    "keydown",
+    (event) => {
+      if (!event.shiftKey && event.key === "Enter") {
+        event.preventDefault();
+        const cmd = consoleInUi.value.replace(/\n$/, "");
+        consoleInUi.value = "";
 
-      if (historyIndex !== undefined) {
-        commandHistory.pop();
-        historyIndex = undefined;
-      }
-      commandHistory.push(cmd);
-
-      const pre = cmd.split(' ')[0];
-
-      if (pre in commandList) {
-        print(pre, INFO_LEVEL.user);
-        commandList[pre].func();
-      } else if (cmd.startsWith('!')) {
-        print(pre, INFO_LEVEL.user);
-        print('Command not recognized. Try !help.', INFO_LEVEL.warn);
-      } else if (runningProcess != null) {
-        runningProcess.dispatch("stdin", `${cmd}\n`);
-      } else {
-        runCommand(cmd);
-      }
-
-      return false;
-    } if (!event.ctrlKey && event.key === 'ArrowUp') {
-      event.preventDefault();
-      const currCmd = consoleInUi.value;
-
-      if (historyIndex === undefined) {
-        commandHistory.push(currCmd);
-        historyIndex = commandHistory.length - 2;
-      } else {
-        if (historyIndex - 1 < 0) {
-          historyIndex = commandHistory.length;
+        if (historyIndex !== undefined) {
+          commandHistory.pop();
+          historyIndex = undefined;
         }
-        historyIndex -= 1;
+        commandHistory.push(cmd);
+
+        const pre = cmd.split(" ")[0];
+
+        if (pre === "!lang" && cmd.split(" ").length > 1) {
+          lang = cmd.split(" ")[1];
+          const langObj = langInfo[lang];
+          const extLang = getModeFromName(`.${lang}`);
+          if (langObj !== undefined) {
+            setLanguage(lang);
+            return false;
+          } else if (extLang !== undefined) {
+            setLanguage(extLang[0]);
+            return false;
+          }
+        }
+
+        if (pre in commandList) {
+          print(pre, INFO_LEVEL.user);
+          commandList[pre].func();
+        } else if (cmd.startsWith("!")) {
+          print(pre, INFO_LEVEL.user);
+          print("Command not recognized. Try !help.", INFO_LEVEL.warn);
+        } else if (runningProcess != null) {
+          runningProcess.dispatch("stdin", `${cmd}\n`);
+        } else {
+          runCommand(cmd);
+        }
+
+        return false;
       }
+      if (!event.ctrlKey && event.key === "ArrowUp") {
+        event.preventDefault();
+        const currCmd = consoleInUi.value;
 
-      consoleInUi.value = commandHistory[historyIndex];
-      return false;
-    }
-    return true;
-  }, false);
+        if (historyIndex === undefined) {
+          commandHistory.push(currCmd);
+          historyIndex = commandHistory.length - 2;
+        } else {
+          if (historyIndex - 1 < 0) {
+            historyIndex = commandHistory.length;
+          }
+          historyIndex -= 1;
+        }
 
-  themeChoiceUi.addEventListener('change', () => {
+        consoleInUi.value = commandHistory[historyIndex];
+        return false;
+      }
+      return true;
+    },
+    false
+  );
+
+  themeChoiceUi.addEventListener("change", () => {
     setTheme(themeChoiceUi.value);
   });
+
+  // 확장자 입력하여 setLanguage
+  let ext = "";
+  let lang;
+  const changeLangEvt = (event) => {
+    if (event.key !== "Enter") {
+      ext += event.key;
+      lang = getModeFromName(`.${ext}`);
+    } else if (event.key === "Enter" && lang !== undefined) {
+      setLanguage(lang[0]);
+      ext = "";
+      lang = undefined;
+      optionsContainer.classList.remove("active");
+      document.removeEventListener("keydown", changeLangEvt);
+    }
+  };
 
   languageDisplaySelectedUi.addEventListener("click", (e1) => {
     if (optionsContainer.classList.contains("active")) {
       optionsContainer.classList.remove("active");
     } else {
+      document.addEventListener("keydown", changeLangEvt);
+
       optionsContainer.classList.add("active");
-      e1.stopImmediatePropagation()
-      document.addEventListener("click", function (e) {
-        if (languageDisplaySelectedUi.contains(e.target)) return;
-        optionsContainer.classList.remove("active");
-      }, { once: true })
+      e1.stopImmediatePropagation();
+      document.addEventListener(
+        "click",
+        (e) => {
+          if (languageDisplaySelectedUi.contains(e.target)) return;
+          optionsContainer.classList.remove("active");
+        },
+        { once: true }
+      );
     }
   });
 
-
   // Load Languages
   try {
-    const response = await fetch('res/lang.json');
+    const response = await fetch("res/lang.json");
     const data = await response.text();
     langInfo = JSON.parse(data);
     mergeDeep(langInfo, settings.languageConfig);
 
     Object.entries(langInfo).forEach((el) => {
-      const option = document.createElement('div');
+      const option = document.createElement("div");
       option.classList.add("option");
       const [name, obj] = el;
       option.innerText = obj.name;
@@ -894,18 +984,13 @@ async function _initialize() {
         setLanguage(option.dataset.value);
       });
     });
-
   } catch (err) {
     print(`An error ocurred reading the file :${err.message}`, INFO_LEVEL.err);
     return;
   }
 
-
-
-
-
-  webviewUi.addEventListener('console-message', (e) => {
-    if (e.sourceId === 'electron/js2c/renderer_init.js') return;
+  webviewUi.addEventListener("console-message", (e) => {
+    if (e.sourceId === "electron/js2c/renderer_init.js") return;
 
     let mode = 1;
     switch (e.level) {
@@ -923,69 +1008,77 @@ async function _initialize() {
         break;
     }
 
-    const source = e.sourceId.split('/').pop();
+    const source = e.sourceId.split("/").pop();
     let fileSource = `${source}:${e.line}`;
 
-    if (source === (file.name + file.extension)) {
+    if (source === file.name + file.extension) {
       fileSource = `<a class="jump-to-line" href="#${e.line}">${fileSource}</a>`;
     }
 
     print(`Message from ${fileSource}\n${e.message}`, mode);
   });
 
-
-
-  editorMediaDivUi.addEventListener('divider-move', () => {
+  editorMediaDivUi.addEventListener("divider-move", () => {
     const val = editorMediaDivUi.previousElementSibling.style.width;
-    window.api.storeSetting('media_div_percent', val)
+    window.api.storeSetting("media_div_percent", val);
   });
-  editorConsoleDivUi.addEventListener('divider-move', () => {
+  editorConsoleDivUi.addEventListener("divider-move", () => {
     const val = editorConsoleDivUi.previousElementSibling.style.height;
-    window.api.storeSetting('console_div_percent', val)
+    window.api.storeSetting("console_div_percent", val);
   });
 
-  editorMediaDivUi.addEventListener('dblclick', () => {
-    const num = parseFloat(editorMediaDivUi.previousElementSibling.style.width.replace('%', ''));
-    const targetPercent = Math.abs(num - 50) < 1 ? '100%' : '50%';
+  editorMediaDivUi.addEventListener("dblclick", () => {
+    const num = parseFloat(
+      editorMediaDivUi.previousElementSibling.style.width.replace("%", "")
+    );
+    const targetPercent = Math.abs(num - 50) < 1 ? "100%" : "50%";
 
-    const anim = editorMediaDivUi.previousElementSibling.animate([
-      { width: editorMediaDivUi.previousElementSibling.style.width },
-      { width: targetPercent },
-    ], {
-      duration: 450,
-      easing: 'cubic-bezier(0.860, 0.000, 0.070, 1.000)',
-    });
+    const anim = editorMediaDivUi.previousElementSibling.animate(
+      [
+        { width: editorMediaDivUi.previousElementSibling.style.width },
+        { width: targetPercent },
+      ],
+      {
+        duration: 450,
+        easing: "cubic-bezier(0.860, 0.000, 0.070, 1.000)",
+      }
+    );
     anim.finished.then(() => {
       editorMediaDivUi.previousElementSibling.style.width = targetPercent;
-      window.api.storeSetting('media_div_percent', targetPercent)
+      window.api.storeSetting("media_div_percent", targetPercent);
     });
   });
-  editorConsoleDivUi.addEventListener('dblclick', () => {
-    const num = parseFloat(editorConsoleDivUi.previousElementSibling.style.height.replace('%', ''));
-    const targetPercent = Math.abs(num - 60) < 1 ? '100%' : '60%';
+  editorConsoleDivUi.addEventListener("dblclick", () => {
+    const num = parseFloat(
+      editorConsoleDivUi.previousElementSibling.style.height.replace("%", "")
+    );
+    const targetPercent = Math.abs(num - 60) < 1 ? "100%" : "60%";
 
-    const anim = editorConsoleDivUi.previousElementSibling.animate([
-      { height: editorConsoleDivUi.previousElementSibling.style.height },
-      { height: targetPercent },
-    ], {
-      duration: 450,
-      easing: 'cubic-bezier(0.860, 0.000, 0.070, 1.000)',
-    });
+    const anim = editorConsoleDivUi.previousElementSibling.animate(
+      [
+        { height: editorConsoleDivUi.previousElementSibling.style.height },
+        { height: targetPercent },
+      ],
+      {
+        duration: 450,
+        easing: "cubic-bezier(0.860, 0.000, 0.070, 1.000)",
+      }
+    );
     anim.finished.then(() => {
       editorConsoleDivUi.previousElementSibling.style.height = targetPercent;
-      window.api.storeSetting('console_div_percent', targetPercent)
+      window.api.storeSetting("console_div_percent", targetPercent);
     });
   });
 
-
-
-  previewDevDivUi.addEventListener('dblclick', () => {
+  previewDevDivUi.addEventListener("dblclick", () => {
     togglePreviewDivider();
   });
 
-  document.getElementById('editor-wrapper').style.width = editorConfig.media_div_percent;
-  document.getElementById('main-divider').style.height = editorConfig.console_div_percent;
-  document.getElementById('embed-content').style.height = "100%";
+  document.getElementById("editor-wrapper").style.width =
+    editorConfig.media_div_percent;
+  document.getElementById("main-divider").style.height =
+    editorConfig.console_div_percent;
+  document.getElementById("embed-content").style.height = "100%";
 
   print(`${appInfo.name} ${appInfo.version}`);
 
@@ -996,11 +1089,9 @@ async function _initialize() {
   }
 }
 
-
-
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   const resizable = (resizer) => {
-    const direction = resizer.getAttribute('data-direction') || 'horizontal';
+    const direction = resizer.getAttribute("data-direction") || "horizontal";
     const prevSibling = resizer.previousElementSibling;
     const nextSibling = resizer.nextElementSibling;
 
@@ -1016,42 +1107,46 @@ document.addEventListener('DOMContentLoaded', () => {
       const dy = e.clientY - y;
 
       switch (direction) {
-        case 'vertical': {
-          const h = (prevSiblingHeight + dy) * 100 / resizer.parentNode.getBoundingClientRect().height;
+        case "vertical": {
+          const h =
+            ((prevSiblingHeight + dy) * 100) /
+            resizer.parentNode.getBoundingClientRect().height;
           prevSibling.style.height = `${h}% `;
           break;
         }
-        case 'horizontal':
+        case "horizontal":
         default: {
-          const w = (prevSiblingWidth + dx) * 100 / resizer.parentNode.getBoundingClientRect().width;
+          const w =
+            ((prevSiblingWidth + dx) * 100) /
+            resizer.parentNode.getBoundingClientRect().width;
           prevSibling.style.width = `${w}% `;
           break;
         }
       }
 
-      prevSibling.style.userSelect = 'none';
-      prevSibling.style.pointerEvents = 'none';
+      prevSibling.style.userSelect = "none";
+      prevSibling.style.pointerEvents = "none";
 
-      nextSibling.style.userSelect = 'none';
-      nextSibling.style.pointerEvents = 'none';
+      nextSibling.style.userSelect = "none";
+      nextSibling.style.pointerEvents = "none";
     };
 
     const mouseUpHandler = () => {
-      resizer.style.removeProperty('cursor');
-      document.body.style.removeProperty('cursor');
+      resizer.style.removeProperty("cursor");
+      document.body.style.removeProperty("cursor");
 
-      prevSibling.style.removeProperty('user-select');
-      prevSibling.style.removeProperty('pointer-events');
+      prevSibling.style.removeProperty("user-select");
+      prevSibling.style.removeProperty("pointer-events");
 
-      nextSibling.style.removeProperty('user-select');
-      nextSibling.style.removeProperty('pointer-events');
+      nextSibling.style.removeProperty("user-select");
+      nextSibling.style.removeProperty("pointer-events");
 
       // Remove the handlers of `mousemove` and `mouseup`
-      document.removeEventListener('mousemove', mouseMoveHandler);
-      document.removeEventListener('mouseup', mouseUpHandler);
+      document.removeEventListener("mousemove", mouseMoveHandler);
+      document.removeEventListener("mouseup", mouseUpHandler);
 
       // Dispatch the event
-      const event = new CustomEvent('divider-move');
+      const event = new CustomEvent("divider-move");
       resizer.dispatchEvent(event);
     };
 
@@ -1066,19 +1161,19 @@ document.addEventListener('DOMContentLoaded', () => {
       prevSiblingWidth = rect.width;
 
       // Attach the listeners to `document`
-      document.addEventListener('mousemove', mouseMoveHandler);
-      document.addEventListener('mouseup', mouseUpHandler);
+      document.addEventListener("mousemove", mouseMoveHandler);
+      document.addEventListener("mouseup", mouseUpHandler);
     };
 
     // Attach the handler
-    resizer.addEventListener('mousedown', mouseDownHandler);
+    resizer.addEventListener("mousedown", mouseDownHandler);
   };
 
   // Query all resizers
-  document.querySelectorAll('.resizer').forEach((ele) => {
+  document.querySelectorAll(".resizer").forEach((ele) => {
     resizable(ele);
   });
 });
 
 /* ---- DOCUMENT READY ---- */
-document.addEventListener('DOMContentLoaded', _initialize);
+document.addEventListener("DOMContentLoaded", _initialize);
